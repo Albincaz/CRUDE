@@ -2,10 +2,10 @@ import userSchema from "./model.js"
 
 
  export async function addUser(req,res){
-  const {username,email,phone}=req.body;
+  const {username,email,address}=req.body;
   console.log(req.body);
-  res.status(200).send({msg:"successfully added"})
-   await userSchema.create({username,email,phone})
+  res.status(201).send({msg:"successfully added"})
+   await userSchema.create({username,email,address})
 
   
 }
@@ -29,8 +29,8 @@ export async function deleteUser(req,res){
 }
 export async function updateUser(req,res){
     const {_id}=req.params
-    const {username,email,phone}=req.body;
-    await userSchema.findByIdAndUpdate(_id,{username,email,phone})
+    const {username,email,address}=req.body;
+    await userSchema.findByIdAndUpdate(_id,{username,email,address})
        .then(()=>{
             res.status(200).send({msg:"Task updated successfully"})
        })

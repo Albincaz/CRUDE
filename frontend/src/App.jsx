@@ -1,69 +1,102 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import "./App.css"
+import { useState, useEffect } from 'react';
+import './App.css';
+import apiPath from './path';
+import axios from "axios"
 
 function App() {
-  const [todos, setTodos] = useState([]);
-  const [newTodo, setNewTodo] = useState('');
-
-  
-  useEffect(() => {
-    axios.get('http://localhost:5000/api/todos')
-      .then(response => {
-        setTodos(response.data);
-      })
-      .catch(error => console.error('Error fetching todos:', error));
-  }, []);
-
-
-  const addTodo = () => {
-    if (newTodo.trim()) {
-      const todo = {
-        id: Date.now(), 
-        task: newTodo,
-      };
-
-      axios.post('http://localhost:5000/api/todos', todo)
-        .then(response => {
-          setTodos([...todos, response.data]);
-          setNewTodo(''); 
-        })
-        .catch(error => console.error('Error adding todo:', error));
+  let [task, setTask] = useState({ username: "", email: "", address: "" });
+  const [data, setData] = useState([]);
+  const [count, setCount] = useState(0)
+  const [editingId, setEditingId] = useState(null); 
+ 
+ 
+  const handleAddOrUpdate = async () => {
+    if (editingId) {
+      // Update user
+      try {
+        const res = await axios.put(`${apiPath()}/updateuser/${editingId}`, task);
+        if (res.status === 200) {
+          alert(res.data.msg);
+          setCount(count + 1);
+          setTask({ username: "", email: "", address: "" });
+          setEditingId(null); 
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    } else {
+      try {
+        const res = await axios.post(`${apiPath()}/adduser`, task);
+        if (res.status === 201) {
+          setCount(count + 1);
+          alert(res.data.msg);
+          setTask({ username: "", email: "", address: "" });
+        } else {
+          alert(res.data.msg);
+        }
+      } catch (error) {
+        console.log(error);
+      }
     }
   };
 
-  const deleteTodo = (id) => {
-    axios.delete(`http://localhost:5000/api/todos/${id}`)
-      .then(() => {
-        setTodos(todos.filter(todo => todo.id !== id));
-      })
-      .catch(error => console.error('Error deleting todo:', error));
+  useEffect(() => {
+    fetch(`${apiPath()}/getuser`)
+      .then(res => res.json())
+      .then((out) => {
+        setData(out);
+
+      });
+  }, [count]);
+
+  const handleDelete = async (id) => {
+    try {
+      const res = await axios.delete(`${apiPath()}/deleteuser/${id}`);
+      if (res.status === 200) {
+        alert(res.data.msg);
+        setCount(count + 1);
+      }
+    } catch (error) {
+      console.log(error);
+
+    }
+  }
+
+  const handleEdit = (id) => {
+    const userToEdit = data.find((user) => user._id === id);
+    setTask({ ...userToEdit }); 
+    setEditingId(id); 
   };
 
+
+
+
   return (
-    <div className="App">
-      <h1>To-Do List</h1>
+    <div className="app-container">
+      <div className="input-section">
+        <input type="text" name="username" onChange={(e) => setTask((pre) => ({ ...pre, [e.target.name]: e.target.value }))} value={task.username} placeholder="Name" className="input-field1" />
+        <input type="text" name="email" onChange={(e) => setTask((pre) => ({ ...pre, [e.target.name]: e.target.value }))} value={task.email} placeholder="Email" className="input-field1" />
+        <input type="text" name="address" onChange={(e) => setTask((pre) => ({ ...pre, [e.target.name]: e.target.value }))} value={task.address} placeholder="address" className="input-field1" />
+        <button className="add-button" onClick={handleAddOrUpdate}>
+          {editingId ? "Update" : "Add"}
+        </button>
+      </div>
+      <table className="item-table">
+        <tbody>
+          {data.map((item, ind) => (<tr key={ind}>
+               <td>{item.username}</td>
+               <td>{item.email}</td>
+               <td>{item.address}</td>
+               <td><button className="action-button" onClick={() => handleEdit(item._id)}>Edit</button>
+               <button className="action-button delete-button" onClick={() => handleDelete(item._id)}>Delete</button></td>
+              
+            
+          </tr>))}
 
-
-      <input
-        type="text"
-        value={newTodo}
-        onChange={(e) => setNewTodo(e.target.value)}
-        placeholder="Enter a new todo"
-      />
-      <button onClick={addTodo}>Add Todo</button>
-
-
-      <ul>
-        {todos.map(todo => (
-          <li key={todo.id}>
-            {todo.task}
-            <button onClick={() => deleteTodo(todo.id)}>Delete</button>
-          </li>
-        ))}
-      </ul>
+        </tbody>
+      </table>
     </div>
   );
-}
+};
 
 export default App;
